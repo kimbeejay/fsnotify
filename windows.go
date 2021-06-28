@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -493,6 +494,15 @@ func (w *Watcher) readEvents() {
 			case syscall.FILE_ACTION_RENAMED_OLD_NAME:
 				watch.rename = name
 			case syscall.FILE_ACTION_RENAMED_NEW_NAME:
+				oldFullName := filepath.Join(watch.path, watch.rename)
+				for _, watchMap := range w.watches {
+					for _, otherWatch := range watchMap {
+						if strings.HasPrefix(otherWatch.path, oldFullName) {
+							otherWatch.path = filepath.Join(fullname, strings.TrimPrefix(otherWatch.path, oldFullName))
+						}
+					}
+				}
+
 				if watch.names[watch.rename] != 0 {
 					watch.names[name] |= watch.names[watch.rename]
 					delete(watch.names, watch.rename)
